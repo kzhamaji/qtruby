@@ -149,6 +149,7 @@ void marshall_ItemList(Marshall *m) {
 				  cpplist->append((Item*)ptr);
 			  }
 			}
+                        RB_GC_GUARD(av);
 
 			if (m->cleanup()) {
 				delete cpplist;
@@ -258,6 +259,8 @@ void marshall_ValueListItem(Marshall *m) {
 			*(m->var()) = av;
 			m->next();
 
+                        RB_GC_GUARD(av);
+
 			if (m->cleanup()) {
 				delete valuelist;
 			}
@@ -361,6 +364,8 @@ void marshall_LinkedItemList(Marshall *m) {
 
 			*(m->var()) = av;
 			m->next();
+
+                        RB_GC_GUARD(av);
 
 			if (m->cleanup()) {
 				delete valuelist;
@@ -473,6 +478,8 @@ void marshall_LinkedValueListItem(Marshall *m) {
 			*(m->var()) = av;
 			m->next();
 
+                        RB_GC_GUARD(av);
+
 			if (m->cleanup()) {
 				delete valuelist;
 			}
@@ -553,6 +560,8 @@ void marshall_Hash(Marshall *m) {
 		*(m->var()) = hv;
 		m->next();
 		
+                RB_GC_GUARD(hv);
+
 		if (m->cleanup())
 			delete hash;
 	}
@@ -633,6 +642,8 @@ void marshall_Map(Marshall *m) {
 		*(m->var()) = hv;
 		m->next();
 		
+                RB_GC_GUARD(hv);
+
 		if (m->cleanup()) {
 			delete map;
 		}
