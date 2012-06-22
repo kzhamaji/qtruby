@@ -1268,12 +1268,13 @@ VALUE prettyPrintMethod(Smoke::Index id)
     qtruby_str_catf(r, "%s ", (tname ? tname:"void"));
     qtruby_str_catf(r, "%s::%s(", qtcore_Smoke->classes[meth.classId].className, qtcore_Smoke->methodNames[meth.name]);
     for(int i = 0; i < meth.numArgs; i++) {
-	if(i) qtruby_str_catf(r, ", ");
-	tname = qtcore_Smoke->types[qtcore_Smoke->argumentList[meth.args+i]].name;
-	qtruby_str_catf(r, "%s", (tname ? tname:"void"));
+        if(i) qtruby_str_catf(r, ", ");
+        tname = qtcore_Smoke->types[qtcore_Smoke->argumentList[meth.args+i]].name;
+        qtruby_str_catf(r, "%s", (tname ? tname:"void"));
     }
     qtruby_str_catf(r, ")");
     if(meth.flags & Smoke::mf_const) qtruby_str_catf(r, " const");
     return r;
 }
 }
+// vim: ts=4:sts=4:sw=4:et

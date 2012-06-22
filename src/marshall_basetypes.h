@@ -196,3 +196,4 @@ void marshall_to_ruby<unsigned char *>(Marshall *m)
 
 #endif
 // kate: space-indent false;
+// vim: ts=4:sts=4:sw=4:et

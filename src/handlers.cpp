@@ -2614,3 +2614,4 @@ Marshall::HandlerFn getMarshallFn(const SmokeType &type) {
 
 	return marshall_unknown;
 }
+// vim: ts=4:sts=4:sw=4:et

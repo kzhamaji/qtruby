@@ -645,3 +645,4 @@ void marshall_Map(Marshall *m) {
 }
 
 #endif
+// vim: ts=4:sts=4:sw=4:et

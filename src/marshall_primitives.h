@@ -288,3 +288,4 @@ static VALUE primitive_to_ruby<Q_PID>(Q_PID sv)
 #endif
 
 #endif
+// vim: ts=4:sts=4:sw=4:et

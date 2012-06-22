@@ -41,15 +41,15 @@ public:
     SmokeType() : _t(0), _smoke(0), _id(0) {}
     SmokeType(Smoke *s, Smoke::Index i) : _smoke(s), _id(i) {
 	if(_id < 0 || _id > _smoke->numTypes) _id = 0;
-	_t = _smoke->types + _id;
+    _t = _smoke->types + _id;
     }
     // default copy constructors are fine, this is a constant structure
 
     // mutators
     void set(Smoke *s, Smoke::Index i) {
-	_smoke = s;
-	_id = i;
-	_t = _smoke->types + _id;
+        _smoke = s;
+        _id = i;
+        _t = _smoke->types + _id;
     }
 
     // accessors
@@ -67,21 +67,21 @@ public:
     bool isRef() const { return ((flags() & Smoke::tf_ref) == Smoke::tf_ref); }
     bool isConst() const { return (flags() & Smoke::tf_const); }
     bool isClass() const {
-	if(elem() == Smoke::t_class)
-	    return classId() ? true : false;
-	return false;
+        if(elem() == Smoke::t_class)
+            return classId() ? true : false;
+        return false;
     }
 
     bool operator ==(const SmokeType &b) const {
-	const SmokeType &a = *this;
-	if(a.name() == b.name()) return true;
-	if(a.name() && b.name() && qstrcmp(a.name(), b.name()) == 0)
-	    return true;
-	return false;
+        const SmokeType &a = *this;
+        if(a.name() == b.name()) return true;
+        if(a.name() && b.name() && qstrcmp(a.name(), b.name()) == 0)
+            return true;
+        return false;
     }
     bool operator !=(const SmokeType &b) const {
-	const SmokeType &a = *this;
-	return !(a == b);
+        const SmokeType &a = *this;
+        return !(a == b);
     }
 
 };
@@ -92,12 +92,12 @@ class SmokeClass {
     Smoke::Index _id;
 public:
     SmokeClass(const SmokeType &t) {
-	_smoke = t.smoke();
-	_id = t.classId();
-	_c = _smoke->classes + _id;
+        _smoke = t.smoke();
+        _id = t.classId();
+        _c = _smoke->classes + _id;
     }
     SmokeClass(Smoke *smoke, Smoke::Index id) : _smoke(smoke), _id(id) {
-	_c = _smoke->classes + _id;
+        _c = _smoke->classes + _id;
     }
 
     Smoke *smoke() const { return _smoke; }
@@ -107,24 +107,24 @@ public:
     Smoke::ClassFn classFn() const { return _c->classFn; }
     Smoke::EnumFn enumFn() const { return _c->enumFn; }
     bool operator ==(const SmokeClass &b) const {
-	const SmokeClass &a = *this;
-	if(a.className() == b.className()) return true;
-	if(a.className() && b.className() && qstrcmp(a.className(), b.className()) == 0)
-	    return true;
-	return false;
+        const SmokeClass &a = *this;
+        if(a.className() == b.className()) return true;
+        if(a.className() && b.className() && qstrcmp(a.className(), b.className()) == 0)
+            return true;
+        return false;
     }
     bool operator !=(const SmokeClass &b) const {
-	const SmokeClass &a = *this;
-	return !(a == b);
+        const SmokeClass &a = *this;
+        return !(a == b);
     }
     bool isa(const SmokeClass &sc) const {
-	// This is a sick function, if I do say so myself
-	if(*this == sc) return true;
-	Smoke::Index *parents = _smoke->inheritanceList + _c->parents;
-	for(int i = 0; parents[i]; i++) {
-	    if(SmokeClass(_smoke, parents[i]).isa(sc)) return true;
-	}
-	return false;
+        // This is a sick function, if I do say so myself
+        if(*this == sc) return true;
+        Smoke::Index *parents = _smoke->inheritanceList + _c->parents;
+        for(int i = 0; parents[i]; i++) {
+            if(SmokeClass(_smoke, parents[i]).isa(sc)) return true;
+        }
+        return false;
     }
 
     unsigned short flags() const { return _c->flags; }
@@ -162,3 +162,4 @@ struct MocArgument {
 };
 
 #endif // SMOKERUBY_H
+// vim: ts=4:sts=4:sw=4:et
