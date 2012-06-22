@@ -2638,10 +2638,16 @@ module Qt
 		# wrapped in a new ruby variable of type T_DATA
 		def Internal.try_initialize(instance, *args)
 			initializer = instance.method(:initialize)
-			catch :newqt do
+ 			# We have to guard newborn ruby object by stopping GC because
+  			# initialize_qt()(Qt::Base.initialize) throws it and
+ 			# we don't have good way to protect it until we catch it here.
+ 			gc_disabled = GC.disable
+ 			robj = catch :newqt do
 				initializer.call(*args)
-			end
-		end
+            end
+			GC.enable unless gc_disabled
+			robj
+ 		end
 		
         # If a block was passed to the constructor, then
 		# run that now. Either run the context of the new instance
