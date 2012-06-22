@@ -1260,6 +1260,14 @@ static VALUE module_method_missing(int argc, VALUE * argv, VALUE klass)
     return class_method_missing(argc, argv, klass);
 }
 
+static VALUE module_const_missing(int argc, VALUE * argv, VALUE klass)
+{
+   	VALUE val = class_method_missing(argc, argv, klass);
+	VALUE name = rb_id2str(SYM2ID(argv[0]));
+	rb_define_const(klass, StringValuePtr(name), val);
+    return val;
+}
+
 /*
 
 class LCDRange < Qt::Widget
@@ -2257,8 +2265,10 @@ create_qt_class(VALUE /*self*/, VALUE package_value, VALUE module_value)
 	VALUE klass = module_value;
 	QString packageName(package);
 
-    rb_define_singleton_method(module_value, "method_missing", (VALUE (*) (...)) module_method_missing, -1);
-    rb_define_singleton_method(module_value, "const_missing", (VALUE (*) (...)) module_method_missing, -1);
+    if (module_value != qt_module) {
+        rb_define_singleton_method(module_value, "method_missing", (VALUE (*) (...)) module_method_missing, -1);
+        rb_define_singleton_method(module_value, "const_missing", (VALUE (*) (...)) module_const_missing, -1);
+    }
 
 	foreach(QString s, packageName.mid(strlen(moduleName) + 2).split("::")) {
 		klass = rb_define_class_under(klass, (const char*) s.toLatin1(), qt_base_class);
@@ -2389,7 +2399,7 @@ Init_qtruby4()
     rb_define_method(qt_base_class, "method_missing", (VALUE (*) (...)) method_missing, -1);
 
     rb_define_singleton_method(qt_base_class, "const_missing", (VALUE (*) (...)) class_method_missing, -1);
-    rb_define_singleton_method(qt_module, "const_missing", (VALUE (*) (...)) module_method_missing, -1);
+    rb_define_singleton_method(qt_module, "const_missing", (VALUE (*) (...)) module_const_missing, -1);
     rb_define_method(qt_base_class, "const_missing", (VALUE (*) (...)) method_missing, -1);
 
     rb_define_method(qt_base_class, "dispose", (VALUE (*) (...)) dispose, 0);
