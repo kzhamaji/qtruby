@@ -547,10 +547,7 @@ findMethod(VALUE /*self*/, VALUE c_value, VALUE name_value)
 #endif
     }
 
-    if (meth.index == 0) {
-        return result;
-    // empty list
-    } else if (meth.index > 0) {
+    if (meth.index > 0) {
         Smoke::Index i = meth.smoke->methodMaps[meth.index].method;
         if (i == 0) {		// shouldn't happen
             rb_raise(rb_eArgError, "Corrupt method %s::%s", c, name);
@@ -574,6 +571,7 @@ findMethod(VALUE /*self*/, VALUE c_value, VALUE name_value)
             }
 	    }
     }
+    RB_GC_GUARD(result);
     return result;
 }
 
@@ -641,10 +639,12 @@ findAllMethods(int argc, VALUE * argv, VALUE /*self*/)
                         }
                     }
                     rb_hash_aset(result, rb_str_new2(smoke->methodNames[m]), meths);
+                    RB_GC_GUARD(meths);
                 }
             }
         }
     }
+    RB_GC_GUARD(result);
     return result;
 }
 

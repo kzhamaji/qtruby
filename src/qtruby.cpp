@@ -1377,6 +1377,7 @@ new_qt(int argc, VALUE * argv, VALUE klass)
 	VALUE result = rb_funcall2(qt_internal_module, rb_intern("try_initialize"), argc+1, temp_stack);
 	rb_obj_call_init(result, argc, argv);
 
+        RB_GC_GUARD(result);
 	return result;
 }
 
@@ -1391,6 +1392,7 @@ qapplication_argv(VALUE /*self*/)
 		rb_ary_push(result, rb_str_new2(qApp->argv()[index]));
 	}
 
+        RB_GC_GUARD(result);
 	return result;
 }
 
@@ -1598,6 +1600,7 @@ getIsa(VALUE /*self*/, VALUE classId)
 	//logger("\tparent: %s", qtcore_Smoke->classes[*parents].className);
 	rb_ary_push(parents_list, rb_str_new2(smoke->classes[*parents++].className));
     }
+    RB_GC_GUARD(parents_list);
     return parents_list;
 }
 
@@ -1658,7 +1661,8 @@ rb_qFindChildren_helper(VALUE parent, const QString &name, VALUE re,
         }
         rb_qFindChildren_helper(rv, name, re, mo, list);
     }
-	return;
+    RB_GC_GUARD(children);
+    return;
 }
 
 /* Should mimic Qt4's QObject::findChildren method with this syntax:
@@ -1686,6 +1690,7 @@ find_qobject_children(int argc, VALUE *argv, VALUE self)
 	QMetaObject * mo = (QMetaObject*) o->ptr;
 	VALUE result = rb_ary_new();
 	rb_qFindChildren_helper(self, name, re, *mo, result);
+        RB_GC_GUARD(result);
 	return result;
 }
 
@@ -1710,6 +1715,7 @@ rb_qFindChild_helper(VALUE parent, const QString &name, const QMetaObject &mo)
         if (rv != Qnil)
             return rv;
     }
+    RB_GC_GUARD(children);
     return Qnil;
 }
 

@@ -97,6 +97,7 @@ show_exception_message()
             fprintf(stderr, "\t%s", s.toLatin1().data());
         }
     }
+    RB_GC_GUARD(bt);
 }
 
 static VALUE funcall2_protect_id = Qnil;
