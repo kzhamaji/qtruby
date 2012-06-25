@@ -1307,24 +1307,23 @@ initialize_qt(int argc, VALUE * argv, VALUE self)
 		return self;
 	}
 
-	VALUE klass = rb_funcall(self, rb_intern("class"), 0);
-	VALUE constructor_name = rb_str_new2("new");
-
-	VALUE * temp_stack = ALLOCA_N(VALUE, argc+4);
-
-	temp_stack[0] = rb_str_new2("Qt");
-	temp_stack[1] = constructor_name;
-	temp_stack[2] = klass;
-	temp_stack[3] = self;
-
-	for (int count = 0; count < argc; count++) {
-		temp_stack[count+4] = argv[count];
-	}
+	VALUE klass = rb_obj_class(self);
 
 	{
-		QByteArray * mcid = find_cached_selector(argc+4, temp_stack, klass, rb_class2name(klass));
+		QByteArray * mcid = find_cached_selector(argc-1, argv+1, klass, klass);
 
 		if (_current_method.index == -1) {
+            VALUE * temp_stack = ALLOCA_N(VALUE, argc+4);
+
+            temp_stack[0] = rb_str_new2("Qt");
+            temp_stack[1] = rb_str_new2("new");
+            temp_stack[2] = klass;
+            temp_stack[3] = self;
+
+            for (int count = 0; count < argc; count++) {
+                temp_stack[count+4] = argv[count];
+            }
+
 			retval = rb_funcall2(qt_internal_module, rb_intern("do_method_missing"), argc+4, temp_stack);
 			if (_current_method.index != -1) {
 				// Success. Cache result.
@@ -1341,7 +1340,7 @@ initialize_qt(int argc, VALUE * argv, VALUE self)
 	{
 		// Allocate the MethodCall within a C block. Otherwise, because the continue_new_instance()
 		// call below will longjmp out, it wouldn't give C++ an opportunity to clean up
-		QtRuby::MethodCall c(_current_method.smoke, _current_method.index, self, temp_stack+4, argc);
+		QtRuby::MethodCall c(_current_method.smoke, _current_method.index, self, argv, argc);
 		c.next();
 		temp_obj = *(c.var());
 	}
