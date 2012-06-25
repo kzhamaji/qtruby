@@ -749,7 +749,7 @@ findAllMethodNames(VALUE /*self*/, VALUE result, VALUE classid, VALUE flags_valu
 }
 
 QByteArray *
-find_cached_selector(int argc, VALUE * argv, VALUE klass, const char * methodName)
+find_cached_selector(int argc, VALUE * argv, VALUE klass, VALUE method)
 {
     // Look in the cache
 static QByteArray * mcid = 0;
@@ -757,10 +757,11 @@ static QByteArray * mcid = 0;
 		mcid = new QByteArray();
 	}
 
-	*mcid = rb_class2name(klass);
+    *mcid = "";
+    mcid->append(reinterpret_cast<char*>(&klass), sizeof(klass));
 	*mcid += ';';
-	*mcid += methodName;
-	for(int i=4; i<argc ; i++)
+    mcid->append(reinterpret_cast<char*>(&method), sizeof(method));
+	for(int i=0; i<argc ; i++)
 	{
 		*mcid += ';';
 		*mcid += value_to_type_flag(argv[i]);
@@ -788,55 +789,54 @@ static QByteArray * mcid = 0;
 VALUE
 method_missing(int argc, VALUE * argv, VALUE self)
 {
-	const char * methodName = rb_id2name(SYM2ID(argv[0]));
-    VALUE klass = rb_funcall(self, rb_intern("class"), 0);
+    VALUE klass = rb_obj_class(self);
 
-    VALUE retval = Qnil;
-
-	// Look for 'thing?' methods, and try to match isThing() or hasThing() in the Smoke runtime
-static QByteArray * pred = 0;
-	if (pred == 0) {
-		pred = new QByteArray();
-	}
-
-	*pred = methodName;
-	if (pred->endsWith("?")) {
-		smokeruby_object *o = value_obj_info(self);
-		if(!o || !o->ptr) {
-			return rb_call_super(argc, argv);
-		}
-
-		// Drop the trailing '?'
-		pred->replace(pred->length() - 1, 1, "");
-
-		pred->replace(0, 1, pred->mid(0, 1).toUpper());
-		pred->replace(0, 0, "is");
-		Smoke::ModuleIndex meth = o->smoke->findMethod(o->smoke->classes[o->classId].className, (const char *) *pred);
-
-		if (meth.index == 0) {
-			pred->replace(0, 2, "has");
-			meth = o->smoke->findMethod(o->smoke->classes[o->classId].className, *pred);
-		}
-
-		if (meth.index > 0) {
-			methodName = (char *) (const char *) *pred;
-		}
-	}
-
-	VALUE * temp_stack = ALLOCA_N(VALUE, argc+3);
-    temp_stack[0] = rb_str_new2("Qt");
-    temp_stack[1] = rb_str_new2(methodName);
-    temp_stack[2] = klass;
-    temp_stack[3] = self;
-    for (int count = 1; count < argc; count++) {
-		temp_stack[count+3] = argv[count];
-    }
+    QByteArray * mcid = find_cached_selector(argc-1, argv+1, klass, argv[0]);
 
 	{
-		QByteArray * mcid = find_cached_selector(argc+3, temp_stack, klass, methodName);
-
 		if (_current_method.index == -1) {
 			// Find the C++ method to call. Do that from Ruby for now
+            const char * methodName = rb_id2name(SYM2ID(argv[0]));
+            VALUE retval = Qnil;
+
+            // Look for 'thing?' methods, and try to match isThing() or hasThing() in the Smoke runtime
+            static QByteArray * pred = 0;
+            if (pred == 0) {
+                pred = new QByteArray();
+            }
+
+            *pred = methodName;
+            if (pred->endsWith("?")) {
+                smokeruby_object *o = value_obj_info(self);
+                if(!o || !o->ptr) {
+                    return rb_call_super(argc, argv);
+                }
+
+                // Drop the trailing '?'
+                pred->replace(pred->length() - 1, 1, "");
+
+                pred->replace(0, 1, pred->mid(0, 1).toUpper());
+                pred->replace(0, 0, "is");
+                Smoke::ModuleIndex meth = o->smoke->findMethod(o->smoke->classes[o->classId].className, (const char *) *pred);
+
+                if (meth.index == 0) {
+                    pred->replace(0, 2, "has");
+                    meth = o->smoke->findMethod(o->smoke->classes[o->classId].className, *pred);
+                }
+
+                if (meth.index > 0) {
+                    methodName = (char *) (const char *) *pred;
+                }
+            }
+
+            VALUE * temp_stack = ALLOCA_N(VALUE, argc+3);
+            temp_stack[0] = rb_str_new2("Qt");
+            temp_stack[1] = rb_str_new2(methodName);
+            temp_stack[2] = klass;
+            temp_stack[3] = self;
+            for (int count = 1; count < argc; count++) {
+                temp_stack[count+3] = argv[count];
+            }
 
 			retval = rb_funcall2(qt_internal_module, rb_intern("do_method_missing"), argc+3, temp_stack);
 			if (_current_method.index == -1) {
@@ -936,7 +936,7 @@ static QByteArray * name = 0;
 			methcache.insert(*mcid, new Smoke::ModuleIndex(_current_method));
 		}
 	}
-    QtRuby::MethodCall c(_current_method.smoke, _current_method.index, self, temp_stack+4, argc-1);
+    QtRuby::MethodCall c(_current_method.smoke, _current_method.index, self, argv+1, argc-1);
     c.next();
     VALUE result = *(c.var());
     return result;
@@ -946,21 +946,25 @@ VALUE
 class_method_missing(int argc, VALUE * argv, VALUE klass)
 {
 	VALUE result = Qnil;
-	VALUE retval = Qnil;
-	const char * methodName = rb_id2name(SYM2ID(argv[0]));
-	VALUE * temp_stack = ALLOCA_N(VALUE, argc+3);
-    temp_stack[0] = rb_str_new2("Qt");
-    temp_stack[1] = rb_str_new2(methodName);
-    temp_stack[2] = klass;
-    temp_stack[3] = Qnil;
-    for (int count = 1; count < argc; count++) {
-		temp_stack[count+3] = argv[count];
-    }
+    const char * methodName = 0;
 
     {
-		QByteArray * mcid = find_cached_selector(argc+3, temp_stack, klass, methodName);
+		QByteArray * mcid = find_cached_selector(argc-1, argv+1, klass, argv[0]);
 
 		if (_current_method.index == -1) {
+            VALUE retval = Qnil;
+            VALUE * temp_stack = ALLOCA_N(VALUE, argc+3);
+
+            if (!methodName)
+                methodName = rb_id2name(SYM2ID(argv[0]));
+
+            temp_stack[0] = rb_str_new2("Qt");
+            temp_stack[1] = rb_str_new2(methodName);
+            temp_stack[2] = klass;
+            temp_stack[3] = Qnil;
+            for (int count = 1; count < argc; count++) {
+                temp_stack[count+3] = argv[count];
+            }
 			retval = rb_funcall2(qt_internal_module, rb_intern("do_method_missing"), argc+3, temp_stack);
 			if (_current_method.index != -1) {
 				// Success. Cache result.
@@ -974,6 +978,9 @@ static QRegExp * rx = 0;
 		if (rx == 0) {
 			rx = new QRegExp("[a-zA-Z]+");
 		}
+
+        if (!methodName)
+            methodName = rb_id2name(SYM2ID(argv[0]));
 
 		if (rx->indexIn(methodName) == -1) {
 			// If an operator method hasn't been found as an instance method,
@@ -989,7 +996,7 @@ static QRegExp * rx = 0;
 			return rb_call_super(argc, argv);
 		}
     }
-    QtRuby::MethodCall c(_current_method.smoke, _current_method.index, Qnil, temp_stack+4, argc-1);
+    QtRuby::MethodCall c(_current_method.smoke, _current_method.index, Qnil, argv+1, argc-1);
     c.next();
     result = *(c.var());
     return result;
