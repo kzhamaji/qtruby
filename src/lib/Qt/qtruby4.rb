@@ -2637,16 +2637,17 @@ module Qt
 		# Then use a throw to jump back to here with the C++ instance 
 		# wrapped in a new ruby variable of type T_DATA
 		def Internal.try_initialize(instance, *args)
+ 			gc_disabled = GC.disable
 			initializer = instance.method(:initialize)
  			# We have to guard newborn ruby object by stopping GC because
   			# initialize_qt()(Qt::Base.initialize) throws it and
  			# we don't have good way to protect it until we catch it here.
- 			gc_disabled = GC.disable
  			robj = catch :newqt do
 				initializer.call(*args)
             end
-			GC.enable unless gc_disabled
 			robj
+        ensure
+			GC.enable unless gc_disabled
  		end
 		
         # If a block was passed to the constructor, then
